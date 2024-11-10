@@ -1,0 +1,203 @@
+#include <iostream>
+#include <vector>
+#include <string>
+#include <iomanip>
+#include <fstream>
+
+using namespace std;
+
+// Item class to represent a product
+class Item {
+public:
+    string name;
+    double price;
+    int quantity;
+
+    // Constructor to initialize item
+    Item(string n, double p, int q) : name(n), price(p), quantity(q) {}
+
+    // Function to display item details
+    void display() const {
+        cout << left << setw(20) << name 
+             << setw(10) << "$" << fixed << setprecision(2) << price
+             << setw(10) << quantity 
+             << setw(10) << "$" << fixed << setprecision(2) << (price * quantity) << endl;
+    }
+
+    // Function to save item to a file
+    void saveToFile(ofstream &outFile) const {
+        outFile << name << endl << price << endl << quantity << endl;
+    }
+
+    // Function to load item from a file
+    static Item loadFromFile(ifstream &inFile) {
+        string n;
+        double p;
+        int q;
+
+        getline(inFile, n); // Read name
+        inFile >> p; // Read price
+        inFile >> q; // Read quantity
+        inFile.ignore(); // Ignore newline character
+
+        return Item(n, p, q);
+    }
+};
+
+// ShoppingCart class to manage items in the cart
+class ShoppingCart {
+private:
+    vector<Item> cart;
+
+public:
+    // Add item to the cart
+    void addItem(string name, double price, int quantity) {
+        cart.push_back(Item(name, price, quantity));
+    }
+
+    // Remove an item from the cart by name
+    void removeItem(string name) {
+        for (auto it = cart.begin(); it != cart.end(); ++it) {
+            if (it->name == name) {
+                cart.erase(it);
+                cout << name << " has been removed from the cart." << endl;
+                return;
+            }
+        }
+        cout << "Item not found in the cart!" << endl;
+    }
+
+    // Display all items in the cart
+    void displayCart() {
+        if (cart.empty()) {
+            cout << "Your cart is empty!" << endl;
+            return;
+        }
+
+        cout << left << setw(20) << "Item Name"
+             << setw(10) << "Price"
+             << setw(10) << "Quantity"
+             << setw(10) << "Total" << endl;
+        cout << "-------------------------------------------------" << endl;
+        double total = 0;
+        for (auto& item : cart) {
+            item.display();
+            total += item.price * item.quantity;
+        }
+        cout << "-------------------------------------------------" << endl;
+        cout << "Total Cart Value: $" << fixed << setprecision(2) << total << endl;
+    }
+
+    // Checkout function to display total and clear cart
+    void checkout() {
+        double total = 0;
+        if (cart.empty()) {
+            cout << "Your cart is empty!" << endl;
+            return;
+        }
+
+        cout << "Items in your cart:" << endl;
+        displayCart();
+        cout << "Proceeding to checkout..." << endl;
+        cout << "Total amount to pay: $" << fixed << setprecision(2) << total << endl;
+        cout << "Thank you for shopping!" << endl;
+        cart.clear();  // Clear the cart after checkout
+    }
+
+    // Save cart to a file
+    void saveCart() {
+        ofstream outFile("cart_data.txt");
+        if (outFile.is_open()) {
+            for (const auto& item : cart) {
+                item.saveToFile(outFile);
+            }
+            outFile.close();
+            cout << "Cart has been saved!" << endl;
+        } else {
+            cout << "Error saving the cart!" << endl;
+        }
+    }
+
+    // Load cart from a file
+    void loadCart() {
+        ifstream inFile("cart_data.txt");
+        if (inFile.is_open()) {
+            cart.clear(); // Clear current cart
+            while (inFile.peek() != EOF) {
+                cart.push_back(Item::loadFromFile(inFile));
+            }
+            inFile.close();
+            cout << "Cart has been loaded!" << endl;
+        } else {
+            cout << "No previous cart data found." << endl;
+        }
+    }
+};
+
+// Main program to interact with the user
+int main() {
+    ShoppingCart cart;
+    int choice;
+    string name;
+    double price;
+    int quantity;
+
+    cart.loadCart(); // Load cart from file at the start
+
+    do {
+        cout << "\n--- E-commerce Shopping Cart ---\n";
+        cout << "1. Add item to cart\n";
+        cout << "2. Remove item from cart\n";
+        cout << "3. View cart\n";
+        cout << "4. Checkout\n";
+        cout << "5. Save cart\n";
+        cout << "6. Exit\n";
+        cout << "Enter your choice: ";
+        cin >> choice;
+
+        // Ensure that the newline left by cin >> choice is discarded
+        cin.ignore();  // Ignore the leftover newline character
+
+        switch (choice) {
+            case 1:  // Add item
+                cout << "Enter item name: ";
+                getline(cin, name);
+                cout << "Enter item price: $";
+                cin >> price;
+                cout << "Enter item quantity: ";
+                cin >> quantity;
+                cart.addItem(name, price, quantity);
+                cout << "Item added to cart!" << endl;
+                break;
+
+            case 2:  // Remove item
+                cout << "Enter item name to remove: ";
+                getline(cin, name);  // Get item name to remove
+                cart.removeItem(name);
+                break;
+
+            case 3:  // View cart
+                cart.displayCart();
+                break;
+
+            case 4:  // Checkout
+                cart.checkout();
+                break;
+
+            case 5:  // Save cart
+                cart.saveCart();
+                break;
+
+            case 6:  // Exit
+                cart.saveCart(); // Save the cart before exiting
+                cout << "Exiting the system. Goodbye!" << endl;
+                break;
+
+            default:
+                cout << "Invalid choice! Please try again." << endl;
+        }
+
+    } while (choice != 6);  // End the loop if the user chooses option 6
+
+    return 0;
+}
